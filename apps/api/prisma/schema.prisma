@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  MEMBER
+  TEAM_LEAD
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         UserRole   @default(MEMBER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  authoredKudos Kudos[]   @relation("KudosAuthor")
+  receivedKudos Kudos[]   @relation("KudosRecipient")
+  reactions    Reaction[]
+}
+
+model Kudos {
+  id          String     @id @default(cuid())
+  authorId    String
+  recipientId String
+  message     String     @db.VarChar(280)
+  isHidden    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  author      User       @relation("KudosAuthor", fields: [authorId], references: [id])
+  recipient   User       @relation("KudosRecipient", fields: [recipientId], references: [id])
+  reactions   Reaction[]
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  userId    String
+  kudosId   String
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  kudos     Kudos    @relation(fields: [kudosId], references: [id])
+
+  @@unique([userId, kudosId])
+}
